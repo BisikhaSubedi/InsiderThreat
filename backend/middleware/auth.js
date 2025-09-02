@@ -63,5 +63,5 @@ const requireAuth = (requiredScopes = []) => {
 
 module.exports = {
   requireAuth,
-  hasScopes
+  hasScopes,
 };
