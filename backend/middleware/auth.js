@@ -34,6 +34,8 @@ const verifyJwt = async (token) => {
   return payload;
 };
 
+//logs collection code here
+
 const requireAuth = (requiredScopes = []) => {
   return async (req, res, next) => {
     try {
