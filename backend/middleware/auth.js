@@ -1,5 +1,32 @@
 const { createRemoteJWKSet, jwtVerify } = require("jose");
+const mongoose = require("mongoose");
 
+// ====== MongoDB Connection (only once in your app) ======
+if (!mongoose.connection.readyState) {
+  mongoose
+    .connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => console.log("✅ Connected to MongoDB for insider logs"))
+    .catch((err) => console.error("❌ MongoDB connection error:", err));
+}
+
+// ====== Insider Log Schema ======
+const insiderLogSchema = new mongoose.Schema({
+  timestamp: { type: Date, default: Date.now },
+  userId: String,
+  scopes: [String],
+  method: String,
+  path: String,
+  ip: String,
+  userAgent: String,
+  action: String,
+});
+
+const InsiderLog = mongoose.model("InsiderLog", insiderLogSchema);
+
+// ====== Helper Functions ======
 const getTokenFromHeader = (headers) => {
   const { authorization } = headers;
   const bearerTokenIdentifier = "Bearer";
@@ -34,8 +61,7 @@ const verifyJwt = async (token) => {
   return payload;
 };
 
-//logs collection code here
-
+// ====== Auth Middleware with MongoDB Logging ======
 const requireAuth = (requiredScopes = []) => {
   return async (req, res, next) => {
     try {
@@ -55,6 +81,17 @@ const requireAuth = (requiredScopes = []) => {
       if (!hasScopes(req.user.scopes, requiredScopes)) {
         throw new Error("Insufficient permissions");
       }
+
+      // 🔹 Capture insider log into MongoDB
+      await InsiderLog.create({
+        userId: req.user.id,
+        scopes: req.user.scopes,
+        method: req.method,
+        path: req.originalUrl,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+        action: "API Request",
+      });
 
       next();
     } catch (error) {
