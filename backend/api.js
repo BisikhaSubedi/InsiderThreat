@@ -9,7 +9,7 @@ const generateId = () => {
 };
 
 // List articles
-router.get("/articles", requireAuth(), async (req, res) => {
+router.get("/articles", requireAuth(["list:articles"]), async (req, res) => {
   try {
     // If user has list:articles scope, return all articles
     if (hasScopes(req.user.scopes, ["list:articles"])) {
@@ -26,7 +26,7 @@ router.get("/articles", requireAuth(), async (req, res) => {
 });
 
 // Get article by ID
-router.get("/articles/:id", requireAuth(), async (req, res) => {
+router.get("/articles/:id", requireAuth(["read:articles"]), async (req, res) => {
   try {
     const article = await articleDB.getById(req.params.id);
 
@@ -74,7 +74,7 @@ router.post("/articles", requireAuth(["create:articles"]), async (req, res) => {
 });
 
 // Update article
-router.patch("/articles/:id", requireAuth(), async (req, res) => {
+router.patch("/articles/:id", requireAuth(["update:articles"]), async (req, res) => {
   try {
     const { title, content } = req.body;
     const article = await articleDB.getById(req.params.id);
@@ -104,7 +104,7 @@ router.patch("/articles/:id", requireAuth(), async (req, res) => {
 });
 
 // Delete article
-router.delete("/articles/:id", requireAuth(), async (req, res) => {
+router.delete("/articles/:id", requireAuth(["delete:articles"]), async (req, res) => {
   try {
     const article = await articleDB.getById(req.params.id);
 
