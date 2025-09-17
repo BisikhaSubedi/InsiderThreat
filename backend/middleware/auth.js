@@ -57,7 +57,7 @@ const verifyJwt = async (token) => {
     issuer: process.env.LOGTO_ISSUER,
     audience: process.env.LOGTO_API_RESOURCE,
   });
-
+  console.log("payload:", payload);
   return payload;
 };
 
@@ -70,7 +70,6 @@ const requireAuth = (requiredScopes = []) => {
 
       // Verify the token
       const payload = await verifyJwt(token);
-
       // Add user info to request
       req.user = {
         id: payload.sub,
@@ -81,7 +80,6 @@ const requireAuth = (requiredScopes = []) => {
       if (!hasScopes(req.user.scopes, requiredScopes)) {
         throw new Error("Insufficient permissions");
       }
-
       // 🔹 Capture insider log into MongoDB
       await InsiderLog.create({
         userId: req.user.id,
