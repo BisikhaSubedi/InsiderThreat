@@ -26,27 +26,31 @@ router.get("/articles", requireAuth(["list:articles"]), async (req, res) => {
 });
 
 // Get article by ID
-router.get("/articles/:id", requireAuth("read:articles"), async (req, res) => {
-  try {
-    const article = await articleDB.getById(req.params.id);
+router.get(
+  "/articles/:id",
+  requireAuth(["read:articles"]),
+  async (req, res) => {
+    try {
+      const article = await articleDB.getById(req.params.id);
 
-    if (!article) {
-      return res.status(404).json({ error: "Article not found" });
+      if (!article) {
+        return res.status(404).json({ error: "Article not found" });
+      }
+
+      // If user has read:articles scope or is the owner, allow access
+      if (
+        hasScopes(req.user.scopes, ["read:articles"]) ||
+        article.ownerId === req.user.id
+      ) {
+        return res.json(article);
+      }
+
+      return res.status(403).json({ error: "Access denied" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch article" });
     }
-
-    // If user has read:articles scope or is the owner, allow access
-    if (
-      hasScopes(req.user.scopes, ["read:articles"]) ||
-      article.ownerId === req.user.id
-    ) {
-      return res.json(article);
-    }
-
-    return res.status(403).json({ error: "Access denied" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch article" });
   }
-});
+);
 
 // Create article
 router.post("/articles", requireAuth(["create:articles"]), async (req, res) => {
