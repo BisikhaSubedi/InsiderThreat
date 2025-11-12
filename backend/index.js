@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const apiRouter = require("./api");
+const httpLogger = require('./routes/httpLogger');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,6 +19,9 @@ app.use("/api", apiRouter);
 app.get("/", (_, res) => {
   res.json({ message: "Welcome to our content management system!" });
 });
+
+// http route
+app.use('/api', httpLogger);
 
 // Start server
 app.listen(port, () => {
