@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 // ====== Insider Log Schema ======
-const insiderLogSchema = new mongoose.Schema({
+const articleLogSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
   userId: String,
   scopes: [String],
@@ -12,4 +12,4 @@ const insiderLogSchema = new mongoose.Schema({
   action: String,
 });
 
-const InsiderLog = mongoose.model("InsiderLog", insiderLogSchema);
+module.exports = mongoose.model("InsiderLog", articleLogSchema);

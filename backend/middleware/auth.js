@@ -1,6 +1,6 @@
 const { createRemoteJWKSet, jwtVerify } = require("jose");
 const mongoose = require("mongoose");
-const InsiderLog = require("../models/articleSchema");
+const ArticleLog = require("../models/articleSchema");
 
 // ====== MongoDB Connection (only once in your app) ======
 if (!mongoose.connection.readyState) {
@@ -68,7 +68,7 @@ const requireAuth = (requiredScopes = []) => {
         throw new Error("Insufficient permissions");
       }
       // 🔹 Capture insider log into MongoDB
-      await InsiderLog.create({
+      await ArticleLog.create({
         userId: req.user.id,
         scopes: req.user.scopes,
         method: req.method,

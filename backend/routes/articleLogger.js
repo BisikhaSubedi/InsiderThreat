@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { requireAuth, hasScopes } = require("../middleware/auth");
 const articleDB = require("../db/article");
-const generateId = require("../api");
+const generateId = require("../utils/utils");
 
 // List articles
 router.get("/articles", requireAuth(["list:articles"]), async (req, res) => {

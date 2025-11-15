@@ -6,6 +6,7 @@ const apiRouter = require("./api");
 const httpLogger = require("./routes/httpLogger");
 const articleLogger = require("./routes/articleLogger");
 const emailLogger = require("./routes/emailLogger");
+//const ArticleLogger = require("./routes/ArticleLogger");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,6 +25,9 @@ app.get("/", (_, res) => {
 
 // http route
 app.use("/api", httpLogger);
+
+// article route
+app.use("/api", articleLogger);
 
 // Start server
 app.listen(port, () => {
