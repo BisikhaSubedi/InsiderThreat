@@ -1,4 +1,4 @@
-const mangoose = require("mongoose");
+const mongoose = require("mongoose");
 
 // ====== Insider Log Schema ======
 const insiderLogSchema = new mongoose.Schema({

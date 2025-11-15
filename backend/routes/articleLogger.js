@@ -1,5 +1,8 @@
 const express = require("express");
-const router = require.Router();
+const router = express.Router();
+const { requireAuth, hasScopes } = require("../middleware/auth");
+const articleDB = require("../db/article");
+const generateId = require("../api");
 
 // List articles
 router.get("/articles", requireAuth(["list:articles"]), async (req, res) => {
@@ -149,3 +152,5 @@ router.patch(
     }
   }
 );
+
+module.exports = router;

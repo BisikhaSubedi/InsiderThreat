@@ -3,7 +3,9 @@ const cors = require("cors");
 require("dotenv").config();
 
 const apiRouter = require("./api");
-const httpLogger = require('./routes/httpLogger');
+const httpLogger = require("./routes/httpLogger");
+const articleLogger = require("./routes/articleLogger");
+const emailLogger = require("./routes/emailLogger");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,7 +23,7 @@ app.get("/", (_, res) => {
 });
 
 // http route
-app.use('/api', httpLogger);
+app.use("/api", httpLogger);
 
 // Start server
 app.listen(port, () => {
