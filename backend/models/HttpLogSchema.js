@@ -4,17 +4,16 @@ const HttpLogSchema = new mongoose.Schema({
     id : {type:String, required: true, unique: true},
     date: {type: Date, required: true},
     user: {type: String, required:true},
-    pc: {type: String},
+    pc: {type: String}, // hostname (Mac, Windows)
     url: {type: String},
     method: {type: String},
     referrer: {type: String},
     user_agent: {type: String},
     src_ip: {type: String},
     dest_ip: {type: String},
-    category: {type: String},
+    category: {type: String}, // manually assigned cat
     response_code: {type: Number},
-    bytes: {type: Number},
-    raw: {type: mongoose.Schema.Types.Mixed}
+    bytes: {type: Number}, // response size
 }, {
     collection: 'http_logs',
     timestamps: true

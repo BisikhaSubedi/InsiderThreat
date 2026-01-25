@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require("uuid");
-const Email = require("../models/EmailSchema");
+const Email = require("../models/emailSchema");
 
 /**
  * 

@@ -4,20 +4,23 @@ const { requireAuth, hasScopes } = require("../middleware/auth");
 const { sendEmailAndLog } = require("../utils/sendEmailSmtp"); // add at top of file
 const articleDB = require("../db/article");
 const generateId = require("../utils/utils");
+const { requestLogger } = require("../utils/logger");
 
 // List articles
 router.get("/articles", requireAuth(["list:articles"]), async (req, res) => {
+  requestLogger(req, res);
   try {
     // If user has list:articles scope, return all articles
     if (hasScopes(req.user.scopes, ["list:articles"])) {
       const articles = await articleDB.list();
-      return res.json(articles);
+      res.json(articles);
+    } else {
+      // Otherwise, return only user's articles
+      const articles = await articleDB.listByOwner(req.user.id);
+      res.json(articles);
     }
-
-    // Otherwise, return only user's articles
-    const articles = await articleDB.listByOwner(req.user.id);
-    res.json(articles);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to fetch articles" });
   }
 });
@@ -27,6 +30,7 @@ router.get(
   "/articles/:id",
   requireAuth(["read:articles"]),
   async (req, res) => {
+    requestLogger(req, res);
     try {
       const article = await articleDB.getById(req.params.id);
 
@@ -44,6 +48,7 @@ router.get(
 
       return res.status(403).json({ error: "Access denied" });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Failed to fetch article" });
     }
   }
@@ -52,6 +57,7 @@ router.get(
 // Create article
 router.post("/articles", requireAuth(["create:articles"]), async (req, res) => {
   try {
+    requestLogger(req, res);
     const { title, content } = req.body;
 
     if (!title || !content) {
@@ -68,8 +74,40 @@ router.post("/articles", requireAuth(["create:articles"]), async (req, res) => {
     };
 
     const created = await articleDB.create(article);
+    // If it was just published (i.e., new status is true) -> send email
+    if (created) {
+      // Compose email
+      const from = process.env.EMAIL_FROM || "no-reply@example.com";
+      // recipient(s) - example: admin or author; adjust as needed
+      const to = [
+        { address: process.env.NOTIFY_EMAIL || "admin@example.com" },
+      ];
+
+      const subject = `Article created: ${created.title}`;
+      const html = `
+        <p>User <strong>${
+          req.user?.id || "unknown"
+        }</strong>An article is created.</p>
+        <p><strong>${created.title}</strong></p>
+        <p>${(created.content || "").slice(0, 300)}...</p>
+        <p><a href="${
+          process.env.APP_URL || "http://localhost:5173"
+        }/articles/${created.id}">View article</a></p>
+      `;
+
+      // send and log (await to know the result). If you prefer async background, remove await.
+      const emailResult = await sendEmailAndLog({ from, to, subject, html });
+
+      if (!emailResult.ok) {
+        console.error(
+          "Email sending failed for article create:",
+          emailResult.error
+        );
+      }
+    }
     res.status(201).json(created);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Failed to create article" });
   }
 });
@@ -79,6 +117,8 @@ router.patch(
   "/articles/:id/published",
   requireAuth(["publish:articles"]),
   async (req, res) => {
+
+    requestLogger(req, res);
     try {
       const article = await articleDB.getById(req.params.id);
 
@@ -104,7 +144,7 @@ router.patch(
         const html = `
           <p>User <strong>${
             req.user?.id || "unknown"
-          }</strong> published an article.</p>
+          }</strong>An article is published.</p>
           <p><strong>${updated.title}</strong></p>
           <p>${(updated.content || "").slice(0, 300)}...</p>
           <p><a href="${
@@ -120,10 +160,70 @@ router.patch(
             "Email sending failed for article publish:",
             emailResult.error
           );
-          // You can still return success for publish but include email failure info
-          return res
-            .status(200)
-            .json({ article: updated, email: { ok: false } });
+        }
+      }
+
+      return res.json(updated);
+    } catch (error) {
+      console.error("Failed to update article status:", error);
+      return res.status(500).json({ error: "Failed to update article status" });
+    }
+  }
+);
+
+// Update article
+router.patch(
+  "/articles/:id",
+  requireAuth(["update:articles"]),
+  async (req, res) => {
+
+    requestLogger(req, res);
+    try {
+      const { title, content } = req.body;
+      const article = await articleDB.getById(req.params.id);
+
+      if (!article) {
+        return res.status(404).json({ error: "Article not found" });
+      }
+
+      if (article.isPublished) {
+        return res.status(404).json({ error: "Article already published" });
+      }
+
+      // flip published status
+      const updated = await articleDB.update(req.params.id, {
+        title,
+        content,
+      });
+
+      if (updated) {
+        // Compose email
+        const from = process.env.EMAIL_FROM || "no-reply@example.com";
+        // recipient(s) - example: admin or author; adjust as needed
+        const to = [
+          { address: process.env.NOTIFY_EMAIL || "admin@example.com" },
+        ];
+
+        const subject = `Article updated: ${updated.title}`;
+        const html = `
+          <p>User <strong>${
+            req.user?.id || "unknown"
+          }</strong>An article is updated.</p>
+          <p><strong>${updated.title}</strong></p>
+          <p>${(updated.content || "").slice(0, 300)}...</p>
+          <p><a href="${
+            process.env.APP_URL || "http://localhost:5173"
+          }/articles/${updated.id}">View article</a></p>
+        `;
+
+        // send and log (await to know the result). If you prefer async background, remove await.
+        const emailResult = await sendEmailAndLog({ from, to, subject, html });
+
+        if (!emailResult.ok) {
+          console.error(
+            "Email sending failed for article edit:",
+            emailResult.error
+          );
         }
       }
 
@@ -140,6 +240,8 @@ router.delete(
   "/articles/:id",
   requireAuth(["delete:articles"]),
   async (req, res) => {
+
+    requestLogger(req, res);
     try {
       const article = await articleDB.getById(req.params.id);
 
@@ -152,8 +254,39 @@ router.delete(
       }
 
       await articleDB.delete(req.params.id);
+
+      // Compose email
+      const from = process.env.EMAIL_FROM || "no-reply@example.com";
+      // recipient(s) - example: admin or author; adjust as needed
+      const to = [
+        { address: process.env.NOTIFY_EMAIL || "admin@example.com" },
+      ];
+
+      const subject = `Article deleted: ${article.title}`;
+      const html = `
+        <p>User <strong>${
+          req.user?.id || "unknown"
+        }</strong> Deleted an article.</p>
+        <p><strong>${article.title}</strong></p>
+        <p>${(article.content || "").slice(0, 300)}...</p>
+        <p><a href="${
+          process.env.APP_URL || "http://localhost:5173"
+        }/articles/${article.id}">View article</a></p>
+      `;
+
+      // send and log (await to know the result). If you prefer async background, remove await.
+      const emailResult = await sendEmailAndLog({ from, to, subject, html });
+
+      if (!emailResult.ok) {
+        console.error(
+          "Email sending failed for article edit:",
+          emailResult.error
+        );
+      }
+
       res.status(204).send();
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Failed to delete article" });
     }
   }

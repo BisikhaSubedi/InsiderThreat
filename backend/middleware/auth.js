@@ -44,7 +44,6 @@ const verifyJwt = async (token) => {
     issuer: process.env.LOGTO_ISSUER,
     audience: process.env.LOGTO_API_RESOURCE,
   });
-  console.log("payload:", payload);
   return payload;
 };
 
@@ -88,4 +87,6 @@ const requireAuth = (requiredScopes = []) => {
 module.exports = {
   requireAuth,
   hasScopes,
+  getTokenFromHeader,
+  verifyJwt
 };

@@ -10,7 +10,6 @@ class ArticleDB {
 
   async init() {
     try {
-      // ✅ ensure the data directory exists
       await fs.mkdir(this.dataDir, { recursive: true });
 
       // try reading the file if it exists

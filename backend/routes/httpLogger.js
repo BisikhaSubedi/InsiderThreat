@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {v4: uuidv4} = require('uuid');
-const HttpLog = require('../models/HttpLogSchema')
+const HttpLog = require('../models/httpLogSchema')
 
 function getClientIp(req) {
     return (req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '').split(',')[0].trim();

@@ -1,7 +1,7 @@
 // utils/sendEmailSmtp.js
 const nodemailer = require("nodemailer");
 const generateId = require("../utils/utils"); // adjust path if your generateId export differs
-const EmailLog = require("../models/EmailSchema");
+const EmailLog = require("../models/emailSchema");
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -16,7 +16,19 @@ const transporter = nodemailer.createTransport({
 // Optional: verify transporter during startup (won't throw in production if not called)
 async function verifyTransport() {
   try {
-    await transporter.verify();
+    let testAccount = await nodemailer.createTestAccount();
+
+    // Create reusable transporter
+    const transporter2 = nodemailer.createTransport({
+      host: testAccount.smtp.host,
+      port: testAccount.smtp.port,
+      secure: testAccount.smtp.secure, // true for 465, false for others
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    await transporter2.verify();
     console.log("SMTP transporter verified");
   } catch (err) {
     console.warn("SMTP transporter verification failed:", err.message || err);
@@ -32,6 +44,20 @@ async function sendEmailAndLog({
   html,
   text,
 }) {
+
+  let testAccount = await nodemailer.createTestAccount();
+
+  // Create reusable transporter
+  const transporter2 = nodemailer.createTransport({
+    host: testAccount.smtp.host,
+    port: testAccount.smtp.port,
+    secure: testAccount.smtp.secure, // true for 465, false for others
+    auth: {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
+  });
+  
   const id = generateId();
   const mailOptions = {
     from,
@@ -48,7 +74,8 @@ async function sendEmailAndLog({
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    console.log("Sending email to:", mailOptions.to);
+    const info = await transporter2.sendMail(mailOptions);
     // log success
     const emailDoc = await EmailLog.create({
       id,
@@ -62,6 +89,8 @@ async function sendEmailAndLog({
       providerResponse: info,
       status: "sent",
     });
+    console.log("Message sent:", info.messageId);
+    console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
     return { ok: true, emailDoc, info };
   } catch (err) {
     // log failure
